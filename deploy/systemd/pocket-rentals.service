@@ -1,0 +1,23 @@
+[Unit]
+Description=Pocket Rentals — the homes you rent out
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-rentals
+Group=pocket-rentals
+ExecStart=/usr/local/bin/pocket-rentals
+Environment=DATA_DIR=/var/lib/pocket-rentals
+Environment=PORT=8080
+Environment=BASE_URL=https://rentals.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-rentals
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

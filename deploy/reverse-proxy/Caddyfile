@@ -1,0 +1,4 @@
+# Pocket Rentals behind Caddy.
+rentals.example.com {
+	reverse_proxy pocket-rentals:8080
+}
