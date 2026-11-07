@@ -30,6 +30,7 @@ type requestIn struct {
 	ProRef      *string `json:"pro_ref"`
 	TenantPays  *bool   `json:"tenant_pays"`
 	Task        *bool   `json:"task"` // make it a task in Pocket Tasks (default: the setting)
+	Ref         string  `json:"ref"`  // the same ref twice gives back the same repair (a retried flow, a form answer)
 }
 
 func (in requestIn) apply(r *store.Request, keys map[string]bool) error {
@@ -156,7 +157,18 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	rq, out, err := s.createRequest(ctx, actorID(ctx), in, linkApp(ctx), "")
+	uid, app := actorID(ctx), linkApp(ctx)
+	ref := clip(strings.TrimSpace(in.Ref), 200)
+	if ref != "" && app != "" && !strings.HasPrefix(ref, app+":") {
+		ref = app + ":" + ref
+	}
+	if ref != "" {
+		if old, err := s.store.RequestBySource(ctx, uid, ref); err == nil {
+			writeJSON(w, http.StatusOK, map[string]any{"request": old, "already": true})
+			return
+		}
+	}
+	rq, out, err := s.createRequest(ctx, uid, in, app, ref)
 	if err != nil {
 		s.userFail(w, err, "repair")
 		return

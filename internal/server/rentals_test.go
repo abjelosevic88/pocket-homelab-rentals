@@ -324,3 +324,14 @@ func TestNoMadeUpLateFees(t *testing.T) {
 		}
 	}
 }
+
+func TestRepairRefOnce(t *testing.T) {
+	a := newApp(t, nil)
+	pid, _, _ := alicePlace(a)
+	body := map[string]any{"property_id": n(pid), "title": "Leak", "ref": "pocket-flows:7:2"}
+	first := a.expect(201, a.alice, "POST", "/api/v1/requests", body)["request"].(map[string]any)
+	again := a.expect(200, a.alice, "POST", "/api/v1/requests", body)["request"].(map[string]any)
+	if id(first) != id(again) || len(a.list(a.alice, "/api/v1/requests")) != 1 {
+		t.Fatal("the same ref made two repairs")
+	}
+}

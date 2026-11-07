@@ -27,7 +27,7 @@ Everything the web app does goes through `/api/v1`, with a session cookie or `Au
 ## Repairs, costs, inspections, photos
 | | |
 |---|---|
-| `GET/POST /requests`, `GET/PUT/DELETE /requests/{id}` | Repairs; `status: "done"` makes the cost an expense, charges the tenant when `tenant_pays`, ticks off its task, logs it in Pocket Home |
+| `GET/POST /requests` (`ref`: the same one twice gives back the same repair), `GET/PUT/DELETE /requests/{id}` | Repairs; `status: "done"` makes the cost an expense, charges the tenant when `tenant_pays`, ticks off its task, logs it in Pocket Home |
 | `GET/POST /expenses`, `PUT/DELETE /expenses/{id}`, `POST /expenses/{id}/money` | Costs of a place |
 | `GET/POST /inspections`, `GET/PUT/DELETE /inspections/{id}`, `PUT /inspections/{id}/items` | Inspections; `from_id` starts from another one's lines; moving out answers with `before` |
 | `POST /files?owner=item\|request\|lease\|property&owner_id=` (multipart `file`), `GET/DELETE /files/{id}` | Photos and PDFs |
