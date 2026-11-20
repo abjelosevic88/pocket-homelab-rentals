@@ -418,7 +418,7 @@ func (s *Server) importPocket(ctx context.Context, uid int64, doc exportDoc) map
 		}
 	}
 	s.forgetEnsured(uid)
-	return map[string]any{"added": n}
+	return importResult(n)
 }
 
 // ---- spreadsheets ----
@@ -657,7 +657,7 @@ func (s *Server) importCSV(ctx context.Context, uid int64, data []byte) (map[str
 		_ = s.store.AddEntry(ctx, &store.Entry{UserID: uid, LeaseID: &lid, Kind: "lease", Title: "Brought in from a spreadsheet"})
 		n["leases"]++
 	}
-	return map[string]any{"added": n}, nil
+	return importResult(n), nil
 }
 
 func splitList(v string) []string {
@@ -723,5 +723,15 @@ func (s *Server) importPayments(ctx context.Context, uid int64, recs [][]string,
 		}
 		n["payments"]++
 	}
-	return map[string]any{"added": n}, nil
+	return importResult(n), nil
+}
+
+// importResult answers an import with its counts, under "added" (for the
+// page) and at the top level (what Pocket Move shows).
+func importResult(n map[string]int) map[string]any {
+	out := map[string]any{"added": n}
+	for k, v := range n {
+		out[k] = v
+	}
+	return out
 }

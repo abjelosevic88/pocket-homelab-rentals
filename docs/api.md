@@ -40,3 +40,5 @@ Offers `rentals:read` (every GET above that is not settings, tokens or exports) 
 
 ## Export and import
 `GET /export.json` (everything, with keys), `GET /export.csv` (one row per lease), `POST /import` (the JSON back, a CSV of leases, or a CSV of payments; twice is the same as once), `GET /backup` (admins: the whole database).
+
+Pocket Move can copy your places, leases and rent ledger out and bring them in (`GET /pocket/portable`; link scopes `move:export` / `move:import`). The import answers its counts under `added` and at the top level.

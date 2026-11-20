@@ -171,6 +171,7 @@ func (s *Server) Router() http.Handler {
 				r.Get("/backup", s.handleBackup)
 				r.Get("/export.json", s.handleExportJSON)
 				r.Get("/export.csv", s.handleExportCSV)
+				r.Get("/pocket/portable", portable.Handler())
 			})
 		})
 	})
