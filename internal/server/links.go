@@ -14,7 +14,7 @@ import (
 // Pocket Core app links (docs/links.md in pocket-homelab-core), Rentals as
 // the target: another Pocket app the person allowed in Core may act here for
 // them with a pcx_ token, only within these scopes. Every route not listed
-// in linkRoutes stays closed to it (403).
+// in linkRoutes, portable or capabilities stays closed to it (403).
 
 var linkOffers = []core.Offer{
 	{Scope: "rentals:read", Name: "See your rentals", Description: "Read your places and units, your tenants and leases, the rent due, paid and late, repairs and inspections, and the year's totals — for a contact's page, your journal, search, expiry reminders, net worth and Pocket AI."},
@@ -32,6 +32,20 @@ var portable = &core.Portable{
 		{Path: "/api/v1/import", Kind: core.KindPocket, Form: "file", Title: "Adds the places, leases, rent ledger and the rest from another box; what you already have is left alone"},
 		{Path: "/api/v1/import", Kind: core.KindCSV, Form: "file", Title: "Adds leases (or rent payments) from a spreadsheet; rows already brought in are skipped"},
 	},
+}
+
+// capabilities are what Pocket Search, Pocket Day and Pocket Hub may ask
+// Rentals (docs/capabilities.md in pocket-homelab-core); Register adds the
+// pocket:* offers. The routes are in capabilities.go. They read; the one
+// thing they add is a repair, and never a payment or a charge.
+var capabilities = core.Capabilities{
+	Search: &core.Searchable{What: "Your places and units, tenants, leases and repairs",
+		Kinds: []string{"place", "unit", "tenant", "lease", "repair"}, Bangs: []string{"rentals", "rent"}},
+	Day: &core.DayFeed{Label: "Rentals", One: "entry", Many: "entries", Unit: "count",
+		What: "The rent that came in and was due that day, repairs reported and done, inspections, and leases that started or ended"},
+	Widget: &core.Widget{Title: "Rentals", What: "Rent that is late or due soon, open repairs and leases ending soon"},
+	Capture: &core.QuickCapture{Kinds: []core.CaptureKind{{Kind: "repair", Label: "Repair",
+		What: "A new repair at your place; with more than one place, start with the place or unit, like \"Flat 2: tap drips\"", Fields: []string{}}}},
 }
 
 type linkRoute struct {
@@ -53,7 +67,7 @@ var errLinkScope = errors.New("outside the link's scope")
 
 // linkAllows reports whether a link token with these scopes may make this request.
 func linkAllows(scopes []string, r *http.Request) bool {
-	if portable.LinkAllows(scopes, r) {
+	if portable.LinkAllows(scopes, r) || capabilities.LinkAllows(scopes, r) {
 		return true
 	}
 	for _, lr := range linkRoutes {

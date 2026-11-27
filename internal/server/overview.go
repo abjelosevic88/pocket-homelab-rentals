@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"net/http"
@@ -395,6 +396,18 @@ func (s *Server) handleYearCSV(w http.ResponseWriter, r *http.Request) {
 
 // ---- for the rest of the box: search, Contacts, Pocket Day ----
 
+// hit is one thing /search found.
+type hit struct {
+	Kind  string `json:"kind"`
+	ID    int64  `json:"id"`
+	Title string `json:"title"`
+	Sub   string `json:"subtitle"`
+	URL   string `json:"url"`
+	Path  string `json:"path"`
+
+	date string // the day it is about, for Pocket Search
+}
+
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := actorID(ctx)
@@ -403,17 +416,8 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if limit <= 0 || limit > 50 {
 		limit = 20
 	}
-	type hit struct {
-		Kind  string `json:"kind"`
-		ID    int64  `json:"id"`
-		Title string `json:"title"`
-		Sub   string `json:"subtitle"`
-		URL   string `json:"url"`
-		Path  string `json:"path"`
-	}
-	out := []hit{}
 	if q == "" {
-		writeJSON(w, http.StatusOK, map[string]any{"results": out})
+		writeJSON(w, http.StatusOK, map[string]any{"results": []hit{}})
 		return
 	}
 	b, err := s.loadBook(ctx, uid, true)
@@ -421,11 +425,18 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, err, "search")
 		return
 	}
+	writeJSON(w, http.StatusOK, map[string]any{"results": s.find(ctx, uid, b, q, limit)})
+}
+
+// find looks in a person's book for the words (lower case): places, leases,
+// tenants and repairs, in that order, at most limit of them (0 = all).
+func (s *Server) find(ctx context.Context, uid int64, b *book, q string, limit int) []hit {
+	out := []hit{}
 	has := func(parts ...string) bool {
 		return strings.Contains(strings.ToLower(strings.Join(parts, " ")), q)
 	}
 	add := func(h hit) {
-		if len(out) < limit {
+		if limit <= 0 || len(out) < limit {
 			h.URL = s.link(h.Path)
 			out = append(out, h)
 		}
@@ -452,10 +463,10 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, rq := range b.requests {
 		if has(rq.Title, rq.Details, rq.ProName, rq.PropertyName, rq.UnitName) {
-			add(hit{Kind: "repair", ID: rq.ID, Title: rq.Title, Sub: place(rq.UnitName, rq.PropertyName) + " · " + strings.ReplaceAll(rq.Status, "_", " "), Path: "/repairs/" + itoa(rq.ID)})
+			add(hit{Kind: "repair", ID: rq.ID, Title: rq.Title, Sub: place(rq.UnitName, rq.PropertyName) + " · " + strings.ReplaceAll(rq.Status, "_", " "), Path: "/repairs/" + itoa(rq.ID), date: rq.ReportedOn})
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"results": out})
+	return out
 }
 
 func tenantEmails(ts []*store.Tenant) string {

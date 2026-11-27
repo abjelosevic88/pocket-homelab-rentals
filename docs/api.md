@@ -38,6 +38,17 @@ Everything the web app does goes through `/api/v1`, with a session cookie or `Au
 ## Pocket Core
 Offers `rentals:read` (every GET above that is not settings, tokens or exports) and `rentals:write` (`POST /requests`, `PUT /requests/{id}` for repairs that app added, `POST /entries`). Events: `rentals.rent_due`, `rentals.rent_late`, `rentals.payment_recorded`, `rentals.lease_started`, `rentals.lease_ending`, `rentals.lease_ended`, `rentals.request_created`, `rentals.request_done` — each with `user_email` and a `url`.
 
+## Pocket Search, Pocket Day and Pocket Hub
+
+Rentals answers the four routes every Pocket app can offer (`docs/capabilities.md` in Pocket Core), so Pocket Search, Pocket Day and Pocket Hub find it on their own. Each has its own link scope that opens that one route and nothing else (`rentals:read` and `rentals:write` do not open them); a signed-in person or a personal token can call them too. Addresses (`url`) are paths in the app. The three `GET`s only read: rent that is due is made by the app's own pages and its morning run, not here.
+
+| Route | Scope | What |
+|---|---|---|
+| `GET /pocket/search?q&limit` | `pocket:search` | `{items}`: what `/search` finds, plus units by their own name and notes; a name that has the words first. Each has `id` (`place:3`, `unit:7`, `tenant:2`, `lease:5`, `repair:9`), `title`, `snippet` (the line `/search` shows under it; a unit: who rents it, or "Empty"), `kind` (place, unit, tenant, lease, repair), `date` (a repair: the day it was reported) and `url` (a unit opens its place) |
+| `GET /pocket/day/{date}` | `pocket:day` | `{date, summary, items, metrics}`: rent that came in (`kind` payment, with `amount` in cents and `currency`), what was due that day and how far it is paid now (`kind` due, the amount in `sub`, `done` when paid), repairs reported and done, inspections (with `time`), leases that started or ended, and a lease that runs out on that day when it is today or later. `summary` is "Rent received from Ana Marić, 1 repair reported"; `metrics` is the rent in, per currency |
+| `GET /pocket/widget` | `pocket:widget` | `{line, metrics, items, url}`: what needs you, as on Today. `line` is "1 rent late, 2 repairs open", empty when nothing does; the items are leases with rent late first, then rent due soon, open repairs (urgent first) and leases ending soon, with `detail` "Ana Marić · 500 EUR late · since 1 Oct"; `metrics` are rent late, due soon, repairs open and units let |
+| `POST /pocket/capture` | `pocket:capture` | `{request_id, kind: "repair", text}` adds a repair (new, normal, reported today) and answers `201 {id, title, url}`. With one place it goes there. With more, start with the place or unit and a colon: "Flat 2: tap drips" is kept for Flat 2 as "Tap drips"; "Flat 2, Linden Court: …" when two places have a Flat 2; a place alone means the whole place. Without one the answer is `400` with what to write. More lines become the details. It is added like `POST /requests` with only a place and a title: on the timeline, as a task when your settings make one for every repair; nobody is told and no money is touched. The same `request_id` again answers the same and adds nothing |
+
 ## Export and import
 `GET /export.json` (everything, with keys), `GET /export.csv` (one row per lease), `POST /import` (the JSON back, a CSV of leases, or a CSV of payments; twice is the same as once), `GET /backup` (admins: the whole database).
 

@@ -133,9 +133,16 @@ type book struct {
 	leaseBy  map[int64]*store.Lease
 }
 
-// loadBook reads everything one person has, with each lease's money worked out.
+// loadBook reads everything one person has, with each lease's money worked
+// out, after making the rent that is due by now.
 func (s *Server) loadBook(ctx context.Context, uid int64, archived bool) (*book, error) {
 	s.ensureUser(ctx, uid, false)
+	return s.readBook(ctx, uid, archived)
+}
+
+// readBook is the book as it stands: it only reads (the routes of
+// capabilities.go must not add a charge on their own).
+func (s *Server) readBook(ctx context.Context, uid int64, archived bool) (*book, error) {
 	b := &book{charges: map[int64][]*store.Charge{}, payments: map[int64][]*store.Payment{}, propByID: map[int64]*store.Property{}, unitByID: map[int64]*store.Unit{}, leaseBy: map[int64]*store.Lease{}}
 	var err error
 	if b.props, err = s.store.ListProperties(ctx, uid, archived); err != nil {

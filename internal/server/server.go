@@ -215,12 +215,13 @@ func (s *Server) registerWithCore(ctx context.Context) error {
 	m := core.Manifest{
 		Slug: "rentals", Name: "Pocket Rentals",
 		Description: "The homes you rent out, in one place: places and units, tenants and leases, the rent due, paid and late, deposits, repairs and inspections with photos, and what each place earns and costs. It picks tenants from Pocket Contacts, books rent and costs in Pocket Money (and finds rent already in your bank there), sends leases to sign with Pocket Sign, puts inspections, repair visits and lease ends in Pocket Calendar, repairs in Pocket Tasks and Pocket Home's log, reports in Pocket Notes, reminders through Pocket Mail, draft invoices in Pocket Invoicing, papers from Pocket Documents, and repairs your tenants report in Pocket Forms. Works on its own too; Pocket AI drafts reminders and sums up inspections.",
-		Icon:        "/favicon.svg", Version: Version,
+		Icon:        "/favicon.svg", Category: "Money", Version: Version,
 		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "RENTALS",
-		Publishes: eventTopics,
-		Offers:    linkOffers,
-		Uses:      append(linkUses(), core.InferenceUse()),
-		Portable:  portable,
+		Publishes:    eventTopics,
+		Offers:       linkOffers,
+		Uses:         append(linkUses(), core.InferenceUse()),
+		Portable:     portable,
+		Capabilities: capabilities,
 	}
 	if s.cfg.BaseURL != "" {
 		m.OIDC = &core.OIDCRequest{RedirectURIs: []string{s.oidcCallbackURL()}}
